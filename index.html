@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f4f7fb">
+<title>蔚山で過ごす時間 / 울산에서 보내는 시간</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin>
+<style>
+:root {
+  --mist: #e9eef5;
+  --paper: #f4f7fb;
+  --surface: #ffffff;
+  --ink: #191f28;
+  --ink-soft: #8b95a1;
+  --sea: #3182f6;
+  --line: #e3e9f1;
+  --buoy: #3182f6;
+  --tint: rgba(49, 130, 246, .1);
+  --card: #ffffff;
+  --radius: 16px;
+  --serif: "Pretendard Variable", Pretendard, "Noto Sans JP", "Hiragino Sans", "Yu Gothic", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --sans: "Pretendard Variable", Pretendard, "Noto Sans JP", "Hiragino Sans", "Yu Gothic", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --pad: clamp(16px, 5vw, 28px);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.7; -webkit-text-size-adjust: 100%; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+a { color: var(--sea); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+button { font-family: inherit; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--buoy); outline-offset: 2px; border-radius: 4px; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 var(--pad); }
+
+/* top bar */
+.bar { position: sticky; top: 0; z-index: 20; background: rgba(244, 247, 251, .9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px); }
+.bar .wrap { display: flex; align-items: center; justify-content: space-between; height: 52px; gap: 12px; }
+.seg { display: flex; background: var(--mist); border-radius: 12px; padding: 4px; gap: 2px; flex: none; }
+.seg button { font: 600 13px/1 var(--sans); padding: 8px 15px; border: 0; background: transparent; color: var(--ink-soft); cursor: pointer; border-radius: 9px; transition: background .15s, color .15s; }
+.seg button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+.seg.lang button { font-size: 12px; letter-spacing: .04em; padding: 8px 12px; }
+
+/* hero */
+.hero { background: var(--paper); padding: 36px 0 12px; }
+.hero h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(26px, 7vw, 38px); line-height: 1.25; letter-spacing: -.02em; margin: 0 0 12px; }
+.hero .lead { max-width: 30em; margin: 0 0 18px; color: var(--ink-soft); font-size: 15px; }
+.when { font-size: 13px; color: var(--ink-soft); margin: 0 0 20px; background: var(--surface); border-radius: 14px; padding: 14px 16px; line-height: 1.6; }
+.when strong { color: var(--ink); font-weight: 600; }
+.wave { display: none; }
+
+/* filters */
+.filters { padding: 20px 0 6px; }
+.frow { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.flabel { flex: none; width: 4.6em; font-size: 12px; color: var(--ink-soft); }
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; margin-right: calc(var(--pad) * -1); padding-right: var(--pad); }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; font: 500 13.5px/1 var(--sans); padding: 10px 14px; border: 0; background: var(--surface); color: var(--ink-soft); border-radius: 10px; cursor: pointer; white-space: nowrap; transition: background .15s, color .15s; }
+.chip[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.fmeta { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 6px 0 4px; }
+.count { font-size: 13px; color: var(--ink-soft); }
+.count b { font-family: var(--serif); font-size: 20px; color: var(--ink); font-weight: 600; margin-right: 2px; }
+.reset { font-size: 13px; background: none; border: 0; color: var(--sea); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 6px 0; }
+.area-intro { margin: 4px 0 6px; color: var(--ink-soft); font-size: 14px; max-width: 32em; }
+
+/* list rows: thumbnail + text */
+.list { padding-bottom: 8px; }
+.item { display: grid; grid-template-columns: 96px 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.thumb { position: relative; width: 96px; height: 96px; border-radius: 16px; overflow: hidden; background: var(--mist); display: grid; place-items: center; }
+.thumb svg { width: 40px; height: 40px; fill: none; stroke: var(--ink-soft); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .6; }
+.thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.body { min-width: 0; }
+.name { font-size: 17px; font-weight: 600; line-height: 1.4; margin: 0; }
+.ko { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
+.sub { margin: 3px 0 0; font-size: 13px; color: var(--ink-soft); }
+.sub .dist { color: var(--sea); font-weight: 500; }
+.desc { margin: 6px 0 0; font-size: 14px; line-height: 1.6; }
+.meta { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 0 14px; }
+.feats { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 5px; }
+.feat { font-size: 12px; color: var(--sea); background: var(--tint); border-radius: 6px; padding: 2px 8px; line-height: 1.7; }
+.links { margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.links a, .links button { font: 500 12.5px/1.5 var(--sans); text-decoration: none; border: 0; background: var(--surface); border-radius: 8px; padding: 7px 12px; color: var(--ink); cursor: pointer; transition: background .15s; }
+.links a:hover, .links button:hover { background: #e5e8eb; }
+.empty { padding: 40px 0; text-align: center; color: var(--ink-soft); }
+
+/* map view */
+.mapview { padding: 16px 0 8px; }
+.mapframe { position: relative; width: 100%; height: min(58vh, 460px); border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--mist); }
+.mapframe iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.mapnote { font-size: 13px; color: var(--ink-soft); margin: 10px 0 0; }
+.pickers { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 12px 0 4px; margin-right: calc(var(--pad) * -1); padding-right: var(--pad); }
+.pickers::-webkit-scrollbar { display: none; }
+.picker { flex: none; width: 150px; text-align: left; border: 0; background: var(--surface); border-radius: 12px; padding: 8px; cursor: pointer; color: var(--ink); }
+.picker[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--sea); }
+.picker .thumb { width: 100%; height: 64px; border-radius: 6px; margin-bottom: 6px; }
+.picker .thumb svg { width: 30px; height: 30px; }
+.picker span { display: block; font-size: 12.5px; line-height: 1.4; }
+.maplinks { margin-top: 10px; }
+
+
+/* leaflet map */
+.mapframe #leafmap { position: absolute; inset: 0; z-index: 0; }
+.leaflet-container { font-family: var(--sans); background: var(--mist); }
+.pin { background: none; border: 0; }
+.pinbody { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: #8b95a1; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: transform .15s; }
+.pinbody svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.pinbody.on { background: var(--sea); transform: scale(1.25); }
+.leaflet-popup-content { margin: 12px 14px; color: #191f28; font-size: 13.5px; line-height: 1.55; }
+.pop b { display: block; font-size: 14.5px; font-weight: 600; }
+.pop .k { color: #8b95a1; font-size: 12px; }
+.pop .pl { margin-top: 6px; display: flex; gap: 10px; }
+.pop a { color: #3182f6; font-size: 12.5px; }
+.picker.set::after { content: "\2713"; float: right; color: var(--sea); font-size: 12px; }
+.editor { margin: 16px 0 0; padding: 14px; border: 1px dashed var(--buoy); border-radius: 12px; background: var(--card); font-size: 13px; }
+.editor p { margin: 0 0 10px; }
+.editor .edrow { display: flex; gap: 8px; margin-bottom: 8px; }
+.editor select, .editor input { flex: 1; min-width: 0; font: 400 14px var(--sans); padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); }
+.editor button { font: 500 13px var(--sans); padding: 9px 14px; border: 0; border-radius: 8px; background: var(--sea); color: #fff; cursor: pointer; flex: none; }
+.editor textarea { width: 100%; font: 12px/1.5 ui-monospace, Menlo, monospace; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); margin-bottom: 8px; }
+
+/* bottom sections */
+.block { padding: 40px 0 0; }
+.block h2 { font-family: var(--serif); font-weight: 600; font-size: 22px; margin: 0 0 6px; }
+.block .lead2 { margin: 0 0 8px; color: var(--ink-soft); font-size: 14px; max-width: 32em; }
+.course { margin: 14px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.course li { font-family: var(--serif); font-size: 17px; }
+.course li + li::before { content: "→"; color: var(--buoy); margin-right: 10px; font-family: var(--sans); }
+.source { font-size: 12.5px; color: var(--ink-soft); margin: 10px 0 0; }
+.access-list { margin: 12px 0 0; padding: 0; list-style: none; }
+.access-list li { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.access-list span:last-child { color: var(--sea); font-weight: 500; text-align: right; }
+footer { margin-top: 56px; background: var(--mist); padding: 32px 0 calc(36px + env(safe-area-inset-bottom, 0px)); text-align: center; }
+footer .names { font-family: var(--serif); font-size: 19px; margin: 0 0 6px; }
+footer p { margin: 0 0 6px; font-size: 13px; color: var(--ink-soft); }
+footer .note { max-width: 30em; margin: 0 auto 16px; }
+
+@media (min-width: 560px) { .item { grid-template-columns: 124px 1fr; gap: 18px; } .thumb { width: 124px; height: 124px; } }
+@media (prefers-reduced-motion: no-preference) { .hero .wave path { animation: drift 14s linear infinite; } @keyframes drift { to { transform: translateX(-160px); } } }
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #17171c; --mist: #26262c; --surface: #26262c; --ink: #f2f4f6; --ink-soft: #9199a3; --sea: #4a92ff; --buoy: #4a92ff; --tint: rgba(74, 146, 255, .16); --line: #2a2a30; --card: #1e1e24; }
+  .bar { background: rgba(23, 23, 28, .9); }
+  .seg button[aria-pressed="true"] { background: #3a3a42; color: #fff; }
+  .chip[aria-pressed="true"] { background: #f2f4f6; color: #17171c; }
+  .links a:hover, .links button:hover { background: #33333a; }
+}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <div class="seg" id="viewSeg" role="group"></div>
+    <div class="seg lang" role="group" aria-label="language">
+      <button type="button" data-lang="jp" aria-pressed="true">JP</button>
+      <button type="button" data-lang="kr" aria-pressed="false">KR</button>
+    </div>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin></script>
+<script>
+/* ============================================================
+   설정 (Settings)
+   COORDS: 지도에 핀을 찍을 좌표입니다. 주소 끝에 ?edit=1 을 붙여 열면(예: index.html?edit=1)
+           지도 탭에서 좌표를 등록하고, 완성된 COORDS 코드를 복사할 수 있습니다.
+           복사한 코드를 아래 COORDS 부분에 그대로 붙여 넣으세요.
+   사진: 같은 폴더의 images/<id>.jpg 를 넣으면 자동으로 썸네일이 됩니다. 없으면 아이콘이 표시됩니다.
+   ============================================================ */
+var COORDS = {};
+var INVITATION_URL = "https://nahyunkwon-830.github.io/wedding-invitation/wedding-jp/";
+
+var LANGS = ["jp", "kr"];
+var gUrl = function (q) { return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q); };
+var nUrl = function (q) { return "https://map.naver.com/p/search/" + encodeURIComponent(q); };
+var embedUrl = function (q) { return "https://maps.google.com/maps?q=" + encodeURIComponent(q) + "&z=16&output=embed"; };
+
+var UI = {
+  kr: {
+    pageTitle: "주변 식당 · 가볼 만한 곳",
+    lead: "결혼식 전후로 들를 만한 곳을 모았어요. 일산지, 태화강 국가정원, 삼산동 세 지역으로 나눴습니다.",
+    when: "<strong>2026년 10월 31일(토) 오후 3시 30분</strong> 타니베이 호텔 해루홀 / 울산 동구 해수욕장5길 43",
+    list: "목록", map: "지도",
+    fArea: "지역", fCat: "종류", all: "전체",
+    count: function (n) { return "<b>" + n + "</b>곳"; },
+    empty: "조건에 맞는 곳이 없어요. 필터를 줄여 보세요.", reset: "필터 초기화",
+    google: "Google 지도", naver: "네이버 지도", showMap: "지도에서 보기",
+    mapPick: "아래 카드를 누르면 지도가 바뀝니다. 위에서 고른 필터가 적용돼요.",
+    mapTap: "핀이나 아래 카드를 누르면 자세한 정보가 나옵니다.",
+    mapFail: "지도를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.",
+    footNote: "영업시간과 휴무일은 바뀔 수 있으니 방문 전에 지도 앱에서 확인해 주세요. 택시를 탈 때는 한글 이름이나 주소를 기사님께 보여 주세요.",
+    invitation: "청첩장 보기", names: "박영재 ・ 권나현"
+  },
+  jp: {
+    pageTitle: "周辺の飲食店・おすすめスポット",
+    lead: "式の前後に立ち寄れる場所をまとめました。イルサンジ、テファガン国家庭園、サムサン洞の3つのエリアに分けています。",
+    when: "<strong>2026年10月31日（土）午後3時30分</strong> Tanibay Hotel & Wedding ヘルホール / 蔚山 東区 해수욕장5길 43",
+    list: "一覧", map: "地図",
+    fArea: "エリア", fCat: "ジャンル", all: "すべて",
+    count: function (n) { return "<b>" + n + "</b>件"; },
+    empty: "条件に合う場所がありません。絞り込みを減らしてみてください。", reset: "絞り込みをリセット",
+    google: "Googleマップ", naver: "Naverマップ", showMap: "地図で見る",
+    mapPick: "下のカードをタップすると地図が切り替わります。上で選んだ絞り込みが反映されます。",
+    mapTap: "ピンや下のカードをタップすると詳細が表示されます。",
+    mapFail: "地図を読み込めませんでした。ネット接続をご確認ください。",
+    footNote: "営業時間や定休日は変更されることがあります。訪問前に地図アプリでご確認ください。タクシーでは、韓国語の店名や住所を運転手さんにお見せください。",
+    invitation: "招待状を見る", names: "パクヨンジェ ・ グォンナヒョン"
+  }
+};
+
+var AREAS = [
+  { id: "ilsan",  n: { kr: "일산지", jp: "イルサンジ" },
+    intro: { kr: "호텔 바로 앞이 바다입니다. 결혼식 전후에 걸어서, 또는 차로 잠깐 다녀올 수 있는 곳부터 골랐어요.",
+             jp: "ホテルの目の前が海です。式の前後に歩いて、または車ですぐに行ける場所を中心に選びました。" } },
+  { id: "taehwa", n: { kr: "태화강 국가정원", jp: "テファガン国家庭園" },
+    intro: { kr: "울산 도심을 흐르는 태화강을 따라 대나무 숲이 이어집니다. 입장료는 무료예요.",
+             jp: "蔚山の中心部を流れるテファ川沿いに、竹林が続きます。入場は無料です。" } },
+  { id: "samsan", n: { kr: "삼산동", jp: "サムサン洞" },
+    intro: { kr: "울산 남구의 번화가입니다. 카페와 식당, 술집이 모여 있어서 식사나 2차 자리를 찾을 때 좋아요.",
+             jp: "蔚山 南区の繁華街です。カフェや飲食店、居酒屋が集まっていて、食事や二次会の場所探しに向いています。" } },
+];
+var CATS = [
+  { id: "see",  n: { kr: "가볼 곳", jp: "見どころ" } },
+  { id: "food", n: { kr: "식사", jp: "お食事" } },
+  { id: "cafe", n: { kr: "카페", jp: "カフェ" } },
+];
+var FEATS = [
+  { id: "group", n: { kr: "단체석", jp: "団体席あり" } },
+  { id: "wait",  n: { kr: "줄 서는 집", jp: "行列になりやすい" } },
+  { id: "park",  n: { kr: "주차장", jp: "駐車場あり" } }
+];
+
+/* id = 사진 파일명(images/<id>.jpg), k = 한글 이름, q = 지도 검색어 */
+var ITEMS = [
+  /* ---- 일산지 ---- */
+  { id: "ilsan-beach", area: "ilsan", cat: "see", k: "일산해수욕장", q: "울산 일산해수욕장", feats: [],
+    n: { kr: "일산해수욕장", jp: "イルサン海水浴場" }, tag: { kr: "도보 30초", jp: "徒歩30秒" },
+    d: { kr: "호텔 바로 앞 해변입니다. 대왕암공원과 슬도까지 해변 산책로로 이어져 있어요.",
+         jp: "ホテルの目の前のビーチ。テワンアム公園やソルドまで、海沿いの遊歩道でつながっています。" } },
+  { id: "daewangam", area: "ilsan", cat: "see", k: "대왕암공원", q: "울산 대왕암공원", feats: [],
+    n: { kr: "대왕암공원", jp: "テワンアム公園（大王岩公園）" }, tag: { kr: "차 3분", jp: "車で3分" },
+    d: { kr: "해송 숲과 기암괴석, 100년이 넘은 울기등대가 있는 공원이고 출렁다리도 있습니다. 출렁다리는 매월 둘째 주 화요일이 정기 휴무라고 하니 방문 전에 확인해 주세요.",
+         jp: "海沿いの松林と奇岩、100年以上の歴史をもつウルギ灯台がある公園で、吊り橋もあります。吊り橋は毎月第2火曜日が定休日とのことなので、訪問前にご確認ください。" } },
+  { id: "seldo", area: "ilsan", cat: "see", k: "슬도", q: "울산 슬도", feats: [],
+    n: { kr: "슬도", jp: "ソルド（瑟島）" }, tag: { kr: "해변 산책로", jp: "海沿いの散歩道" },
+    d: { kr: "파도가 바위 구멍을 스치면 거문고 소리가 난다고 하는 작은 섬입니다. 가을에는 주변에 댑싸리(코키아)와 팜파스 포토존이 생겨 사진 찍기 좋아요.",
+         jp: "波が岩の穴をかすめると、琴のような音が響くといわれる小さな島です。秋には周辺にコキア（ほうき草）やパンパスグラスのフォトスポットができ、写真撮影にぴったりです。" } },
+  { id: "saengsaeng", area: "ilsan", cat: "food", k: "생선구이 생생 일산점", q: "울산 생선구이 생생 일산점", feats: [],
+    n: { kr: "생선구이 생생 일산점", jp: "焼き魚定食「センセン」イルサン店" },
+    d: { kr: "생선구이 한 상이 대표 메뉴입니다. 석쇠불고기와 김치찌개도 후기가 좋아요.",
+         jp: "焼き魚定食が看板メニュー。網焼きプルコギやキムチチゲも好評です。" },
+    addr: { kr: "일산진6길 8 (1층)", jp: "일산진6길 8（1階）" }, tel: "052-251-9211" },
+  { id: "cheongyang", area: "ilsan", cat: "food", k: "청양일초 쭈꾸미", q: "울산 청양일초 쭈꾸미", feats: ["wait"],
+    n: { kr: "청양일초 쭈꾸미", jp: "チョンヤンイルチョ チュックミ" },
+    d: { kr: "현지인이 많이 찾는 쭈꾸미볶음 전문점입니다. 마지막에 볶음밥까지 드셔 보세요.",
+         jp: "地元の人に人気のイイダコ炒めの専門店。締めのポックンパ（炒めご飯）もぜひ。" } },
+  { id: "dolzzambbong", area: "ilsan", cat: "food", k: "울산대왕암돌짬뽕", q: "울산 울산대왕암돌짬뽕", feats: [],
+    n: { kr: "울산대왕암돌짬뽕", jp: "ウルサン テワンアム ドルチャンポン" },
+    d: { kr: "다이닝코드에서 평점이 높은 짬뽕집입니다.", jp: "グルメサイト「ダイニングコード」で評価の高いチャンポン店です。" } },
+  { id: "eunheene", area: "ilsan", cat: "food", k: "제주은희네해장국", q: "울산 제주은희네해장국", feats: [],
+    n: { kr: "제주은희네해장국", jp: "チェジュ ウニネ ヘジャンクッ" },
+    d: { kr: "해장국집입니다. 결혼식 다음 날 아침에 어울려요.", jp: "ヘジャンクッ（酔い覚ましスープ）のお店。式の翌朝におすすめです。" } },
+  { id: "songa", area: "ilsan", cat: "food", k: "손가", q: "울산 손가 해수욕장9길 26", feats: [],
+    n: { kr: "손가", jp: "ソンガ（台湾式中華）" },
+    d: { kr: "일산해수욕장 근처의 대만식 중식당입니다. 유린기와 차돌박이 짬뽕이 대표 메뉴예요.",
+         jp: "イルサン海水浴場近くの台湾式中華料理店。ユーリンチーや牛カルビ入りチャンポンが看板メニューです。" },
+    addr: { kr: "동구 해수욕장9길 26 (1층)", jp: "동구 해수욕장9길 26（1階）" } },
+  { id: "dutoom", area: "ilsan", cat: "food", k: "두툼생돼지촌", q: "울산 두툼생돼지촌 대학길 173", feats: [],
+    n: { kr: "두툼생돼지촌", jp: "トゥトゥム センテジチョン（豚焼肉）" },
+    d: { kr: "생돼지 구이 전문점입니다. 껍삼겹·주먹구이·항정살 등을 맛볼 수 있어요.",
+         jp: "生豚の焼肉専門店。皮付きサムギョプサルや各種焼肉が楽しめます。" },
+    addr: { kr: "동구 대학길 173 (1층)", jp: "동구 대학길 173（1階）" } },
+  { id: "ilsan-hoecenter", area: "ilsan", cat: "food", k: "일산지 회센터", q: "울산 일산지 회센터", feats: [],
+    n: { kr: "일산지 회센터", jp: "イルサンジ刺身センター" },
+    d: { kr: "일산해수욕장 근처의 활어회센터입니다. 여러 횟집이 모여 있어 회와 해산물을 맛볼 수 있어요.",
+         jp: "イルサン海水浴場近くの刺身センター。複数の刺身店が集まっていて、刺身や海産物を楽しめます。" } },
+
+  { id: "shallow-jujeon", area: "ilsan", cat: "cafe", k: "샬로우커피 주전 몽돌해변점", q: "울산 샬로우커피 주전 몽돌해변점", feats: [],
+    n: { kr: "샬로우커피 주전 몽돌해변점", jp: "シャロウコーヒー チュジョン モンドル海辺店" }, tag: { kr: "차로 이동", jp: "車で移動" },
+    d: { kr: "울산 로컬 카페 브랜드의 오션뷰 지점입니다. 아이스크림 라떼가 추천 메뉴예요. 일산지에서는 떨어져 있으니 위치를 확인해 주세요.",
+         jp: "蔚山発のカフェブランドの、海が見える店舗です。アイスクリームラテがおすすめです。イルサンジからは離れているので、場所をご確認ください。" } },
+  { id: "inearth", area: "ilsan", cat: "cafe", k: "인얼스커피", q: "울산 인얼스커피 해수욕장7길 5", feats: ["park"],
+    n: { kr: "인얼스커피", jp: "インアースコーヒー" },
+    d: { kr: "일산해수욕장 근처의 바다 전망 카페입니다. 주차가 가능하고 반려견 동반도 돼요.",
+         jp: "イルサン海水浴場近くの、海が見えるカフェ。駐車場があり、ペット同伴も可能です。" },
+    addr: { kr: "동구 해수욕장7길 5", jp: "동구 해수욕장7길 5" } },
+
+  /* ---- 태화강 국가정원 ---- */
+  { id: "sipridaesup", area: "taehwa", cat: "see", k: "태화강 국가정원 십리대숲", q: "울산 태화강 국가정원 십리대숲", feats: [],
+    n: { kr: "십리대숲・은하수길", jp: "十里竹林（シムニテスプ）・天の川の道" },
+    d: { kr: "약 50만 그루의 대나무 숲입니다. 해가 지면 은하수길에 조명이 켜져요. 점등 종료 시간이 자료마다 밤 10~11시로 달라서 방문 전에 확인해 주세요.",
+         jp: "約50万本の竹林です。日が暮れると「天の川の道」にライトが灯ります。消灯時間は資料によって夜10〜11時とまちまちなので、訪問前にご確認ください。" } },
+  { id: "shallow-gukga", area: "taehwa", cat: "cafe", k: "샬로우커피 국가정원점", q: "울산 샬로우커피 국가정원점", feats: [],
+    n: { kr: "샬로우커피 국가정원점", jp: "シャロウコーヒー 国家庭園店" },
+    d: { kr: "국가정원 바로 앞 카페입니다. 통창으로 공원이 보이고 테라스 좌석도 있어요. 아이스크림 라떼 추천.",
+         jp: "国家庭園の目の前のカフェ。大きな窓から公園が見え、テラス席もあります。アイスクリームラテがおすすめです。" },
+    addr: { kr: "중구 태화동", jp: "中区 태화동" } },
+  { id: "bcd", area: "taehwa", cat: "cafe", k: "BCD 카페", q: "울산 BCD 카페 중구 화진4길 91-2", feats: [],
+    n: { kr: "BCD", jp: "BCD（丘の上のカフェ）" },
+    d: { kr: "국가정원, 태화루, 고래다리, 십리대숲이 한눈에 보이는 뷰 카페입니다. 100개가 넘는 계단을 올라가야 하니 어르신이나 큰 짐이 있는 분은 참고해 주세요.",
+         jp: "国家庭園、テファル楼、クジラ橋、十里竹林を一望できるカフェ。100段以上の階段を上るので、ご年配の方や大きな荷物をお持ちの方はご注意ください。" },
+    addr: { kr: "중구 화진4길 91-2", jp: "중구 화진4길 91-2" } },
+  { id: "aou", area: "taehwa", cat: "cafe", k: "에이오우 젤라또", q: "울산 태화강 에이오우 젤라또", feats: [],
+    n: { kr: "에이오우", jp: "AOU（手作りジェラート）" },
+    d: { kr: "국가정원 근처의 수제 젤라또 가게입니다.", jp: "国家庭園の近くにある、手作りジェラートのお店です。" } },
+  { id: "daebatgol", area: "taehwa", cat: "food", k: "대밭골돼지국밥", q: "울산 대밭골돼지국밥", feats: [],
+    n: { kr: "대밭골돼지국밥", jp: "テバッコル テジクッパプ" },
+    d: { kr: "국가정원길 맛집 목록 상위의 돼지국밥집입니다.", jp: "国家庭園通りのグルメ一覧で上位の、豚肉クッパのお店です。" } },
+  { id: "miryang", area: "taehwa", cat: "food", k: "밀양시골밥상", q: "울산 밀양시골밥상", feats: [],
+    n: { kr: "밀양시골밥상", jp: "ミリャン シゴル パプサン" },
+    d: { kr: "집밥 스타일의 한식 밥상입니다.", jp: "家庭料理スタイルの韓国式定食です。" } },
+  { id: "mijin-gopchang", area: "taehwa", cat: "food", k: "미진돌곱창", q: "울산 미진돌곱창 남산로26번길 10", feats: ["park"],
+    n: { kr: "미진돌곱창", jp: "ミジン トルコプチャン" },
+    d: { kr: "곱창구이와 곱창전골이 대표인 곱창집입니다. 삼호동 쪽 인기 맛집이라 웨이팅이 있을 수 있어요.",
+         jp: "コプチャン（ホルモン）焼きとコプチャン鍋が看板のお店。サムホ洞エリアの人気店で、待つこともあります。" },
+    addr: { kr: "남구 남산로26번길 10", jp: "남구 남산로26번길 10" },
+    hours: { kr: "11:30~21:50", jp: "11:30〜21:50" } },
+
+  /* ---- 삼산동 ---- */
+  { id: "baengnim", area: "samsan", cat: "cafe", k: "백림 베이커리", q: "울산 백림 베이커리 삼산동", feats: [],
+    n: { kr: "백림 베이커리", jp: "ベンニム ベーカリー" },
+    d: { kr: "빵이 다양한 베이커리 카페입니다. 자리가 넉넉해요.", jp: "パンの種類が豊富なベーカリーカフェ。席数も十分あります。" } },
+  { id: "pivot", area: "samsan", cat: "cafe", k: "피벗 PIVOT", q: "울산 삼산동 PIVOT 피벗 카페", feats: [],
+    n: { kr: "PIVOT", jp: "PIVOT（ピボット）" },
+    d: { kr: "삼산동의 카페입니다.", jp: "サムサン洞のカフェです。" } },
+  { id: "mazemaze", area: "samsan", cat: "cafe", k: "메이즈메이즈", q: "울산 메이즈메이즈 삼산", feats: [],
+    n: { kr: "메이즈메이즈", jp: "メイズメイズ" },
+    d: { kr: "감성적인 분위기의 삼산동 카페입니다.", jp: "おしゃれな雰囲気のサムサン洞のカフェです。" } },
+  { id: "orai", area: "samsan", cat: "food", k: "오라이", q: "울산 오라이 왕생로30번길 16", feats: [],
+    n: { kr: "오라이", jp: "オライ（居酒屋）" },
+    d: { kr: "항정살 수육과 된장술밥이 안주로 추천되는 술집입니다.",
+         jp: "豚のほほ肉のスユク（茹で豚）や味噌味の炊き込みご飯がお酒に合うと評判のお店です。" },
+    addr: { kr: "남구 왕생로30번길 16", jp: "남구 왕생로30번길 16" } },
+
+];
+
+var ACCESS = {
+  title: { kr: "공항・역에서 호텔까지", jp: "空港・駅からホテルまで" },
+  intro: { kr: "차로 이동할 때의 대략적인 시간입니다. 버스 노선 등 자세한 안내는 청첩장 페이지에 있어요.",
+           jp: "車で移動する場合のおおよその所要時間です。バスの路線など詳しい案内は招待状ページにあります。" },
+  rows: [
+    { l: { kr: "울산공항", jp: "蔚山空港" }, v: { kr: "차 약 20분", jp: "車で約20分" } },
+    { l: { kr: "시외 고속버스 터미널", jp: "市外高速バスターミナル" }, v: { kr: "차 약 25분", jp: "車で約25分" } },
+    { l: { kr: "태화강역", jp: "テファガン駅" }, v: { kr: "차 약 15~25분", jp: "車で約15〜25分" } },
+    { l: { kr: "울산역 (KTX)", jp: "蔚山駅（KTX）" }, v: { kr: "차 약 50분", jp: "車で約50分" } }
+  ]
+};
+var COURSE = {
+  title: { kr: "하루 코스 예시", jp: "1日コースの例" },
+  steps: { kr: ["태화강 십리대숲", "대왕암공원"], jp: ["テファガン十里竹林", "テワンアム公園"] },
+  src: { kr: "한국관광공사의 당일 여행 추천 코스를 참고했어요.",
+         jp: "韓国観光公社の日帰りコースを参考にしています。" }
+};
+
+/* ---------- state ---------- */
+var lang = "jp";
+var view = "list";               // "list" | "map"
+var fArea = "all", fCat = "all";
+var selId = null;                // map view selection
+
+/* ---------- helpers ---------- */
+function find(arr, id) { for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return arr[i]; return null; }
+function pickLang() {
+  var p = new URLSearchParams(location.search).get("lang");
+  if (p === "kr" || p === "jp") return p;
+  try { var s = localStorage.getItem("guide-lang"); if (s === "kr" || s === "jp") return s; } catch (e) {}
+  return (navigator.language || "").toLowerCase().indexOf("ko") === 0 ? "kr" : "jp";
+}
+function filtered() {
+  return ITEMS.filter(function (it) {
+    if (fArea !== "all" && it.area !== fArea) return false;
+    if (fCat !== "all" && it.cat !== fCat) return false;
+    return true;
+  });
+}
+var ICONS = {
+  see:  '<circle cx="15" cy="14" r="5.5"/><path d="M3 30q6-6 12 0t12 0 12 0M3 37q6-6 12 0t12 0 12 0"/>',
+  food: '<path d="M5 22h34c0 9-7.5 15-17 15S5 31 5 22z"/><path d="M15 16c0-3 3-3 3-7M24 16c0-3 3-3 3-7"/>',
+  cafe: '<path d="M8 17h21v10a9 9 0 0 1-9 9h-3a9 9 0 0 1-9-9z"/><path d="M29 20h3a4.5 4.5 0 0 1 0 9h-3M14 8v5M22 8v5"/>',
+  bar:  '<path d="M10 8h24L22 24z"/><path d="M22 24v13M14 38h16"/>'
+};
+function thumb(it) {
+  return '<div class="thumb"><svg viewBox="0 0 44 44" aria-hidden="true">' + ICONS[it.cat] + '</svg>' +
+         '<img src="images/' + it.id + '.jpg" alt="" loading="lazy" onerror="this.remove()"></div>';
+}
+function chip(label, pressed, attrs) {
+  return '<button type="button" class="chip" aria-pressed="' + pressed + '" ' + attrs + '>' + label + '</button>';
+}
+
+/* ---------- render pieces ---------- */
+function filtersHtml() {
+  var ui = UI[lang];
+  var area = chip(ui.all, fArea === "all", 'data-fa="all"') +
+    AREAS.map(function (a) { return chip(a.n[lang], fArea === a.id, 'data-fa="' + a.id + '"'); }).join("");
+  var cat = chip(ui.all, fCat === "all", 'data-fc="all"') +
+    CATS.map(function (c) { return chip(c.n[lang], fCat === c.id, 'data-fc="' + c.id + '"'); }).join("");
+  return '<div class="filters">' +
+    '<div class="frow"><span class="flabel">' + ui.fArea + '</span><div class="chips">' + area + '</div></div>' +
+    '<div class="frow"><span class="flabel">' + ui.fCat + '</span><div class="chips">' + cat + '</div></div>' +
+    '</div>';
+}
+
+function itemHtml(it) {
+  var ui = UI[lang];
+  var area = find(AREAS, it.area), cat = find(CATS, it.cat);
+  var ko = (lang === "jp") ? '<p class="ko">' + it.k + '</p>' : "";
+  var sub = cat.n[lang] + ' ・ ' + area.n[lang] + (it.tag ? ' ・ <span class="dist">' + it.tag[lang] + '</span>' : "");
+  var meta = "";
+  if (it.addr || it.hours || it.tel) {
+    meta = '<p class="meta">' +
+      (it.addr ? '<span>' + it.addr[lang] + '</span>' : "") +
+      (it.hours ? '<span>' + it.hours[lang] + '</span>' : "") +
+      (it.tel ? '<span><a href="tel:' + it.tel.replace(/-/g, "") + '">' + it.tel + '</a></span>' : "") + '</p>';
+  }
+  var feats = it.feats.length ? '<p class="feats">' + it.feats.map(function (f) { return '<span class="feat">' + find(FEATS, f).n[lang] + '</span>'; }).join("") + '</p>' : "";
+  return '<article class="item" id="p-' + it.id + '">' + thumb(it) +
+    '<div class="body"><h3 class="name">' + it.n[lang] + '</h3>' + ko +
+    '<p class="sub">' + sub + '</p>' +
+    '<p class="desc">' + it.d[lang] + '</p>' + meta + feats +
+    '<p class="links">' + (canMap(it) ? '<button type="button" data-map="' + it.id + '">' + ui.showMap + '</button>' : "") +
+    '<a href="' + gUrl(it.q) + '" target="_blank" rel="noopener">' + ui.google + '</a>' +
+    '<a href="' + nUrl(it.q) + '" target="_blank" rel="noopener">' + ui.naver + '</a></p></div></article>';
+}
+
+function resultHead(list) {
+  var ui = UI[lang];
+  var active = fArea !== "all" || fCat !== "all";
+  var intro = (fArea !== "all") ? '<p class="area-intro">' + find(AREAS, fArea).intro[lang] + '</p>' : "";
+  return '<div class="fmeta"><span class="count">' + ui.count(list.length) + '</span>' +
+    (active ? '<button type="button" class="reset" data-reset="1">' + ui.reset + '</button>' : "") + '</div>' + intro;
+}
+
+function listHtml() {
+  var ui = UI[lang], list = filtered();
+  var body = list.length ? list.map(itemHtml).join("") :
+    '<div class="empty"><p>' + ui.empty + '</p><button type="button" class="reset" data-reset="1">' + ui.reset + '</button></div>';
+  var bottom =
+    '<section class="block"><h2>' + COURSE.title[lang] + '</h2>' +
+    '<ol class="course">' + COURSE.steps[lang].map(function (s) { return '<li>' + s + '</li>'; }).join("") + '</ol>' +
+    '<p class="source">' + COURSE.src[lang] + '</p></section>' +
+    '<section class="block"><h2>' + ACCESS.title[lang] + '</h2><p class="lead2">' + ACCESS.intro[lang] + '</p>' +
+    '<ul class="access-list">' + ACCESS.rows.map(function (r) { return '<li><span>' + r.l[lang] + '</span><span>' + r.v[lang] + '</span></li>'; }).join("") + '</ul></section>';
+  return resultHead(list) + '<div class="list">' + body + '</div>' + bottom;
+}
+
+/* ---------- map (Leaflet + OpenStreetMap) ---------- */
+var EDIT = new URLSearchParams(location.search).get("edit") === "1";
+var LMAP = null, MARKERS = {};
+if (EDIT) { try { var saved = JSON.parse(localStorage.getItem("guide-coords") || "{}"); for (var kk in saved) COORDS[kk] = saved[kk]; } catch (e) {} }
+
+function hasCoords() { for (var k in COORDS) return true; return false; }
+function canMap(it) { return EDIT || !hasCoords() || !!COORDS[it.id]; }
+function mapItems() {
+  var list = filtered();
+  return (EDIT || !hasCoords()) ? list : list.filter(function (it) { return COORDS[it.id]; });
+}
+function pinIcon(it, on) {
+  return L.divIcon({ className: "pin", iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
+    html: '<span class="pinbody' + (on ? ' on' : '') + '"><svg viewBox="0 0 44 44" aria-hidden="true">' + ICONS[it.cat] + '</svg></span>' });
+}
+function popupHtml(it) {
+  var ui = UI[lang];
+  return '<div class="pop"><b>' + it.n[lang] + '</b>' + (lang === "jp" ? '<span class="k">' + it.k + '</span>' : "") +
+    '<div class="pl"><a href="' + gUrl(it.q) + '" target="_blank" rel="noopener">' + ui.google + '</a>' +
+    '<a href="' + nUrl(it.q) + '" target="_blank" rel="noopener">' + ui.naver + '</a></div></div>';
+}
+function pickerHtml(list) {
+  return '<div class="pickers">' + list.map(function (it) {
+    return '<button type="button" class="picker' + (COORDS[it.id] ? ' set' : '') + '" data-pick="' + it.id + '" aria-pressed="' + (it.id === selId) + '">' + thumb(it) + '<span>' + it.n[lang] + '</span></button>';
+  }).join("") + '</div>';
+}
+
+function editorHtml(list) {
+  var n = 0; ITEMS.forEach(function (it) { if (COORDS[it.id]) n++; });
+  return '<div class="editor"><p><strong>좌표 등록 모드</strong> (이 화면은 주소 끝에 ?edit=1 이 있을 때만 보여요)<br>' +
+    '장소를 고른 뒤 구글 지도에서 복사한 좌표를 붙여 넣고 [적용]을 누르거나, 아래 지도를 눌러 위치를 찍어 주세요.</p>' +
+    '<div class="edrow"><select id="edSel">' + list.map(function (it) {
+      return '<option value="' + it.id + '"' + (it.id === selId ? ' selected' : '') + '>' + (COORDS[it.id] ? '✓ ' : '') + it.k + '</option>';
+    }).join("") + '</select></div>' +
+    '<div class="edrow"><input id="edLL" placeholder="35.4936, 129.4392" inputmode="decimal" autocomplete="off"><button type="button" data-edset="1">적용</button></div>' +
+    '<p id="edStat">' + n + ' / ' + ITEMS.length + ' 등록됨</p>' +
+    '<textarea id="edOut" rows="5" readonly></textarea>' +
+    '<button type="button" data-edcopy="1">COORDS 코드 복사</button></div>';
+}
+function edOutText() {
+  var lines = [];
+  ITEMS.forEach(function (it) { var c = COORDS[it.id]; if (c) lines.push('  "' + it.id + '": [' + c[0] + ', ' + c[1] + ']'); });
+  return 'var COORDS = {\n' + lines.join(',\n') + '\n};';
+}
+function updateEditor() {
+  if (!EDIT) return;
+  var n = 0; ITEMS.forEach(function (it) { if (COORDS[it.id]) n++; });
+  var st = document.getElementById("edStat"); if (st) st.textContent = n + " / " + ITEMS.length + " 등록됨";
+  var out = document.getElementById("edOut"); if (out) out.value = edOutText();
+  var sel = document.getElementById("edSel");
+  if (sel) Array.prototype.forEach.call(sel.options, function (o) { var it = find(ITEMS, o.value); o.textContent = (COORDS[o.value] ? "✓ " : "") + it.k; });
+  var inp = document.getElementById("edLL");
+  if (inp && selId) inp.value = COORDS[selId] ? COORDS[selId][0] + ", " + COORDS[selId][1] : "";
+  document.querySelectorAll(".picker").forEach(function (b) { b.classList.toggle("set", !!COORDS[b.dataset.pick]); });
+}
+function parseLL(v) {
+  var m = String(v).match(/(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  var a = parseFloat(m[1]), b = parseFloat(m[2]);
+  if (a > 100 && b < 100) { var t = a; a = b; b = t; }   /* 경도, 위도 순서로 붙여 넣은 경우 */
+  if (a < 33 || a > 39 || b < 124 || b > 132) return null;
+  return [Math.round(a * 1e6) / 1e6, Math.round(b * 1e6) / 1e6];
+}
+function addMarker(it) {
+  var c = COORDS[it.id]; if (!c || !LMAP) return;
+  if (MARKERS[it.id]) { MARKERS[it.id].setLatLng(c); return; }
+  var m = L.marker(c, { icon: pinIcon(it, it.id === selId), title: it.n[lang], keyboard: true }).addTo(LMAP);
+  m.bindPopup(popupHtml(it), { closeButton: false });
+  m.on("click", function () { selectItem(it.id, true); });
+  MARKERS[it.id] = m;
+}
+function setCoord(id, ll) {
+  COORDS[id] = ll;
+  try { localStorage.setItem("guide-coords", JSON.stringify(COORDS)); } catch (e) {}
+  addMarker(find(ITEMS, id));
+  if (LMAP && MARKERS[id]) { selectItem(id, false); }
+  updateEditor();
+}
+function selectItem(id, fromMap) {
+  var prev = selId; selId = id;
+  if (prev && MARKERS[prev]) MARKERS[prev].setIcon(pinIcon(find(ITEMS, prev), false));
+  var mk = MARKERS[id];
+  if (mk) {
+    mk.setIcon(pinIcon(find(ITEMS, id), true));
+    if (!fromMap) { LMAP.setView(mk.getLatLng(), Math.max(LMAP.getZoom(), 15)); }
+    mk.openPopup();
+  }
+  document.querySelectorAll(".picker").forEach(function (b) {
+    var on = b.dataset.pick === id; b.setAttribute("aria-pressed", on ? "true" : "false");
+    if (on && fromMap) b.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  });
+  var sel = document.getElementById("edSel"); if (sel && sel.value !== id) sel.value = id;
+  if (EDIT) updateEditor();
+}
+function destroyMap() { if (LMAP) { LMAP.remove(); LMAP = null; } MARKERS = {}; }
+function initMap() {
+  destroyMap();
+  var el = document.getElementById("leafmap"); if (!el) return;
+  if (typeof L === "undefined") { el.innerHTML = '<p class="empty">' + UI[lang].mapFail + '</p>'; return; }
+  LMAP = L.map(el, { scrollWheelZoom: false });
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors' }).addTo(LMAP);
+  var pts = [];
+  mapItems().forEach(function (it) { if (COORDS[it.id]) { addMarker(it); pts.push(COORDS[it.id]); } });
+  if (selId && MARKERS[selId]) { LMAP.setView(MARKERS[selId].getLatLng(), 15); selectItem(selId, false); }
+  else if (pts.length) LMAP.fitBounds(pts, { padding: [40, 40], maxZoom: 16 });
+  else LMAP.setView([35.5384, 129.3114], 11);
+  if (EDIT) LMAP.on("click", function (e) { if (selId) setCoord(selId, [Math.round(e.latlng.lat * 1e6) / 1e6, Math.round(e.latlng.lng * 1e6) / 1e6]); });
+  setTimeout(function () { if (LMAP) LMAP.invalidateSize(); }, 0);
+  updateEditor();
+}
+
+/* 좌표가 하나도 없을 때는 예전처럼 구글 지도를 한 곳씩 보여 줍니다 */
+function embedHtml(list) {
+  var ui = UI[lang];
+  var sel = find(list, selId) || list[0]; selId = sel.id;
+  return '<div class="mapview"><div class="mapframe"><iframe title="map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="' + embedUrl(sel.q) + '"></iframe></div>' +
+    '<p class="mapnote">' + ui.mapPick + '</p>' + pickerHtml(list) +
+    '<p class="links maplinks"><a href="' + gUrl(sel.q) + '" target="_blank" rel="noopener">' + ui.google + '</a>' +
+    '<a href="' + nUrl(sel.q) + '" target="_blank" rel="noopener">' + ui.naver + '</a></p></div>';
+}
+
+function mapHtml() {
+  var ui = UI[lang], list = mapItems();
+  var out = resultHead(list);
+  if (!list.length) return out + '<div class="empty"><p>' + ui.empty + '</p><button type="button" class="reset" data-reset="1">' + ui.reset + '</button></div>';
+  if (!EDIT && !hasCoords()) return out + embedHtml(list);
+  if (!find(list, selId)) selId = list[0].id;
+  return out + (EDIT ? editorHtml(list) : "") +
+    '<div class="mapview"><div class="mapframe"><div id="leafmap"></div></div>' +
+    '<p class="mapnote">' + ui.mapTap + '</p>' + pickerHtml(list) + '</div>';
+}
+
+/* ---------- main render ---------- */
+function render(keepScroll) {
+  var ui = UI[lang];
+  document.documentElement.lang = (lang === "kr") ? "ko" : "ja";
+  document.title = ui.pageTitle + " | Park Youngjae & Kwon Nahyun";
+  document.querySelectorAll(".lang button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.lang === lang ? "true" : "false"); });
+  document.getElementById("viewSeg").innerHTML =
+    '<button type="button" data-view="list" aria-pressed="' + (view === "list") + '">' + ui.list + '</button>' +
+    '<button type="button" data-view="map" aria-pressed="' + (view === "map") + '">' + ui.map + '</button>';
+
+  var hero = '<section class="hero"><div class="wrap">' +
+    '<h1>' + ui.pageTitle + '</h1><p class="lead">' + ui.lead + '</p><p class="when">' + ui.when + '</p>' +
+    '</div></section>';
+
+  var footer = '<footer><div class="wrap"><p class="names">' + ui.names + '</p><p class="note">' + ui.footNote + '</p>' +
+    '<p><a href="' + INVITATION_URL + '?lang=' + lang + '">' + ui.invitation + '</a></p></div></footer>';
+
+  var y = window.scrollY;
+  destroyMap();
+  document.getElementById("app").innerHTML = hero +
+    '<div class="wrap" id="filterWrap">' + filtersHtml() + '</div>' +
+    '<div class="wrap" id="results">' + (view === "map" ? mapHtml() : listHtml()) + '</div>' + footer;
+  if (view === "map") initMap();
+  if (keepScroll) window.scrollTo(0, y);
+}
+
+/* re-render only filters + results (keeps chip scroll positions simple, avoids hero flicker) */
+function syncSeg() {
+  document.querySelectorAll("#viewSeg button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.view === view ? "true" : "false"); });
+}
+function refresh() {
+  var y = window.scrollY;
+  syncSeg();
+  destroyMap();
+  document.getElementById("filterWrap").innerHTML = filtersHtml();
+  document.getElementById("results").innerHTML = (view === "map" ? mapHtml() : listHtml());
+  if (view === "map") initMap();
+  window.scrollTo(0, y);
+}
+
+function setLang(l) {
+  if (LANGS.indexOf(l) < 0) return;
+  lang = l;
+  try { localStorage.setItem("guide-lang", l); } catch (e) {}
+  try { var u = new URL(location.href); u.searchParams.set("lang", l); history.replaceState(null, "", u); } catch (e) {}
+  render(true);
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", function (e) {
+  var t = e.target.closest("button");
+  if (!t) return;
+  if (t.dataset.lang) return setLang(t.dataset.lang);
+  if (t.dataset.view) { view = t.dataset.view; refresh(); window.scrollTo(0, document.getElementById("filterWrap").offsetTop - 60); return; }
+  if (t.dataset.fa) { fArea = t.dataset.fa; return refresh(); }
+  if (t.dataset.fc) { fCat = t.dataset.fc; return refresh(); }
+  if (t.dataset.reset) { fArea = "all"; fCat = "all"; return refresh(); }
+  if (t.dataset.map) {
+    selId = t.dataset.map; view = "map";
+    /* 선택한 곳이 필터에 걸리지 않으면 필터를 풀어 줍니다 */
+    if (!find(filtered(), selId)) { fArea = "all"; fCat = "all"; }
+    refresh(); window.scrollTo(0, document.getElementById("filterWrap").offsetTop - 60); return;
+  }
+  if (t.dataset.pick) {
+    if (LMAP) return selectItem(t.dataset.pick, false);
+    selId = t.dataset.pick; return refresh();
+  }
+  if (t.dataset.edset) {
+    var ll = parseLL(document.getElementById("edLL").value);
+    if (!ll) { alert("좌표를 읽을 수 없어요. 구글 지도에서 복사한 '35.4936, 129.4392' 형태로 붙여 넣어 주세요."); return; }
+    return setCoord(selId, ll);
+  }
+  if (t.dataset.edcopy) {
+    var out = document.getElementById("edOut"); out.value = edOutText(); out.select();
+    try { navigator.clipboard.writeText(out.value); } catch (er) { document.execCommand("copy"); }
+    t.textContent = "복사했어요"; setTimeout(function () { t.textContent = "COORDS 코드 복사"; }, 1500);
+  }
+});
+document.addEventListener("change", function (e) {
+  if (e.target.id === "edSel") { if (LMAP) selectItem(e.target.value, false); else selId = e.target.value; updateEditor(); }
+});
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && e.target.id === "edLL") { e.preventDefault(); var b = document.querySelector("[data-edset]"); if (b) b.click(); }
+});
+
+lang = pickLang();
+render(false);
+</script>
+</body>
+</html>
